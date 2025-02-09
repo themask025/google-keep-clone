@@ -1,7 +1,7 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 import os
-from src.model import db
-from src.blueprints import auth, notes
+from src.model import database
+from src.controller import auth, notes
 
 
 def create_app(test_config=None):
@@ -9,7 +9,7 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY = 'dev',
-        SQLALCHEMY_DATABASE_URI = "sqlite:///db.sqlite3"
+        DATABASE = os.path.join(app.instance_path, 'db.sqlite'),
     )
     
     if(test_config is not None):
@@ -21,12 +21,16 @@ def create_app(test_config=None):
         pass
     
     # db initialization
-    db.init_app(app)
+    database.init_app(app)
     
     # blueprint registration
     app.register_blueprint(auth.bp)
     app.register_blueprint(notes.bp)
     
     app.add_url_rule('/notes/', endpoint='index')
+    
+    @app.route('/', methods=('GET',))
+    def main():
+        return redirect(url_for('index'))
     
     return app

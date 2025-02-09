@@ -5,6 +5,9 @@
 {% block header %}
     {% if session['user_id'] %}    
         <h1>Hello {{session['username']}}</h1>
+
+        <a href="{{ url_for('notes.create') }}">Create a new note</a>
+
     {% else %}
         <h1>Welcome! Log in to take notes.</h1>
     {% endif %}

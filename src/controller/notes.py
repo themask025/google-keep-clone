@@ -14,13 +14,6 @@ def index():
         notes_rows = db.execute(
             'SELECT * FROM notes WHERE creator_id = ?', (user_id,)).fetchall()
 
-        # output = ""
-        # dict_note = dict(notes_rows[0])
-        # output += str(dict_note.items()) + '\n'
-        # for note in notes_rows:
-        #     dict_note = dict(note)
-        #     output += str(dict_note.items()) + '\n'
-        # flash(output)
     else:
         notes_rows = []
     

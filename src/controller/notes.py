@@ -65,7 +65,7 @@ def edit(note_id):
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
-        timestamp = datetime.now().isoformat(sep=' ')
+        timestamp = datetime.now().isoformat(sep=' ', timespec='seconds')
 
         error = None
 

@@ -1,6 +1,8 @@
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
-from src.model.database import get_db
 from datetime import datetime
+
+from src.model.database import get_db
+# from src.model import tags
 
 
 bp = Blueprint('notes', __name__, url_prefix='/notes')
@@ -61,6 +63,12 @@ def edit(note_id):
     current_note_row = db.execute(
         'SELECT * FROM notes WHERE id = ?', (note_id,)).fetchone()
     current_note = dict(current_note_row)
+    
+    # fetched from tags table
+    all_tags = []
+    
+    # fetched from notes_tags table
+    selected_tags = []
 
     if request.method == 'POST':
         title = request.form['title']
@@ -90,6 +98,24 @@ def edit(note_id):
 
         current_note['title'] = title
         current_note['content'] = content
+        
+        
+        new_tags = request.form['new_tags']
+        
+        # ready to be inserted into tags table
+        new_tags = new_tags.split(',')
+        
+        for tag in new_tags:
+            flash(tag)
+        
+        new_tags_count = len(new_tags)
+        flash(new_tags_count)
+        
+        # ready to be inserted into notes_tags table
+        new_tags_selected = request.form.getlist('new_tag')
+        flash('Selected new tags:')
+        for tag in new_tags_selected:
+            flash(tag)
 
     return render_template('/notes/view_note.html', current_note=current_note)
 

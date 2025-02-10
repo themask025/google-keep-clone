@@ -24,11 +24,61 @@
     {% if current_note %}
         <p>Last edited: {{ current_note['updated_at'] }}</p>
     {% endif %}
+
     <form method="post">
+        <div id="tags_container"></div>
+        <input type="text" id="tag_inputbox" placeholder="Add a new tag..." >
+        <input type="button" id="bt" value="Add" onclick="create_checkbox(tag_inputbox)">
+        <input type="text" id="new_tags" name="new_tags">
+
         <label for="title">Title</label>
         <input name="title" id="title" value="{{ current_note['title'] }}" required>
         <label for="content">Content</label>
         <textarea name="content" id="content" rows="10" cols="50" required>{{ current_note['content'] }}</textarea>
         <input type="submit" value="Save">
     </form>
+
+    
+    <script>
+        var i = 1; // counter
+        
+        function create_checkbox(obj) {
+            if (obj.value !== '') {
+                
+                // Create checkbox (input of type checkbox).
+                var new_checkbox = document.createElement('input');  
+                
+                // Specify the type of element.
+                new_checkbox.setAttribute('type', 'checkbox');
+                new_checkbox.setAttribute('id', 'new_tag_' + i);  // Set an ID.
+                new_checkbox.setAttribute('value', obj.value);
+                new_checkbox.setAttribute('name', 'new_tag');
+                new_checkbox.setAttribute('checked', true);
+                
+                // Create label for checkbox.
+                var new_label = document.createElement('label');  
+                new_label.setAttribute('for', 'new_tag_' + i);
+                
+                // Create text node and append it to the label.
+                new_label.appendChild(document.createTextNode(obj.value));
+                
+                // Append the newly created checkbox and label to the <p>.
+                    tags_container.appendChild(new_checkbox);
+                    tags_container.appendChild(new_label);
+                    
+                    if (i == 1){
+                        new_tags.value = obj.value;
+                    }
+                    else {
+                        new_tags.value += ',' + obj.value;
+                    }
+                    
+                    obj.value = '';
+                    document.getElementById(obj.id).focus();
+                    
+                    i = i + 1;
+                } 
+            }
+        </script>
+
 {% endblock %}

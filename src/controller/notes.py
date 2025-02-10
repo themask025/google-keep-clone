@@ -42,14 +42,14 @@ def create():
             )
             db.commit()
 
-            return redirect(url_for('index'))
+            return redirect(url_for('notes.index'))
         
         flash(error)
 
     return render_template('notes/create.html')
 
 
-@bp.route('/edit/<note_id>', methods=('GET', 'POST'))
+@bp.route('/<note_id>/edit', methods=('GET', 'POST'))
 def edit(note_id):
     db = get_db()
     current_note_row = db.execute(
@@ -86,3 +86,13 @@ def edit(note_id):
         current_note['content'] = content
         
     return render_template('/notes/edit.html', current_note=current_note)
+
+
+@bp.route('/<note_id>/delete', methods=('POST',))
+def delete(note_id):
+    if note_id is not None:
+        db = get_db()
+        db.execute('DELETE FROM notes WHERE id= ? ;', (note_id,))
+        db.commit()
+        return redirect(url_for('notes.index'))
+    

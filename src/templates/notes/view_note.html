@@ -26,10 +26,22 @@
     {% endif %}
 
     <form method="post">
-        <div id="tags_container"></div>
+        <div id="tags_container">
+            {% for i, tag in enumerate(all_tags) %}
+                <input type="checkbox"
+                       name="tag" 
+                       id="tag{{i}}" 
+                       value="{{tag['name']}}"
+                       {% if tag['name'] in selected_tags %}
+                            checked
+                       {% endif %}
+                >
+                <label for="tag{{i}}">{{tag['name']}}</label>
+            {% endfor %}
+        </div>
         <input type="text" id="tag_inputbox" placeholder="Add a new tag..." >
         <input type="button" id="bt" value="Add" onclick="create_checkbox(tag_inputbox)">
-        <input type="text" id="new_tags" name="new_tags">
+        <input type="text" id="new_tags" name="new_tags" hidden>
 
         <label for="title">Title</label>
         <input name="title" id="title" value="{{ current_note['title'] }}" required>
@@ -52,7 +64,7 @@
                 new_checkbox.setAttribute('type', 'checkbox');
                 new_checkbox.setAttribute('id', 'new_tag_' + i);  // Set an ID.
                 new_checkbox.setAttribute('value', obj.value);
-                new_checkbox.setAttribute('name', 'new_tag');
+                new_checkbox.setAttribute('name', 'tag');
                 new_checkbox.setAttribute('checked', true);
                 
                 // Create label for checkbox.

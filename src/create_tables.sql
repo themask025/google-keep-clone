@@ -47,10 +47,10 @@ CREATE TABLE IF NOT EXISTS tags (
   name TEXT UNIQUE NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS note_tags (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS notes_tags (
   note_id INTEGER NOT NULL,
   tag_id INTEGER NOT NULL,
   FOREIGN KEY (note_id) REFERENCES notes (id),
-  FOREIGN KEY (tag_id) REFERENCES tags (id)
+  FOREIGN KEY (tag_id) REFERENCES tags (id),
+  CONSTRAINT note_tag PRIMARY KEY (note_id, tag_id)
 );

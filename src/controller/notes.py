@@ -26,6 +26,14 @@ def index():
 def create():
     current_note = None
 
+    db = get_db()
+
+    # fetched from tags table
+    all_tags = db.execute('SELECT * FROM tags').fetchall()
+    
+    # fetched from notes_tags table
+    selected_tags = []
+
     if request.method == 'POST':
         creator_id = session['user_id']
         title = request.form.get('title')
@@ -46,12 +54,30 @@ def create():
             db.commit()
 
             created_note_id = cursor.lastrowid
+            
+            # adding newly created tags to tags table in the database
+            new_tags = request.form['new_tags']
+            if new_tags != "":
+                new_tags = new_tags.split(',')
+                for tag_name in new_tags:
+                    db.execute('INSERT INTO tags(name) VALUES (?)', (tag_name,))
+                    db.commit()
+
+            currently_selected_tags_names = request.form.getlist('tag')
+            note_id = created_note_id
+            
+            # insert the newly selected tags that are not already in the database
+            for tag_name in currently_selected_tags_names:
+                tag_row = db.execute('SELECT * FROM tags WHERE name=?', (tag_name,)).fetchone()
+                tag_id = tag_row['id']
+                db.execute('INSERT INTO notes_tags(note_id, tag_id) VALUES (?, ?)', (note_id, tag_id))
+                db.commit()
 
             return redirect(url_for('notes.edit', note_id=created_note_id))
 
         flash(error)
 
-    return render_template('notes/view_note.html', current_note=current_note)
+    return render_template('notes/view_note.html', current_note=current_note, all_tags=all_tags, selected_tags=selected_tags, enumerate=enumerate)
 
 
 @bp.route('/edit/<note_id>', methods=('GET', 'POST'))
@@ -67,10 +93,8 @@ def edit(note_id):
     # fetched from tags table
     all_tags = db.execute('SELECT * FROM tags').fetchall()
     
-    # flash('read tags')
-    
     # fetched from notes_tags table
-    selected_tags = []
+    selected_tags = db.execute('SELECT id, name FROM notes_tags JOIN tags ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
 
     if request.method == 'POST':
         title = request.form['title']
@@ -92,6 +116,38 @@ def edit(note_id):
             )
             db.commit()
 
+            # adding newly created tags to tags table in the database
+            new_tags = request.form['new_tags']
+            if new_tags != "":
+                new_tags = new_tags.split(',')
+                for tag_name in new_tags:
+                    db.execute('INSERT INTO tags(name) VALUES (?)', (tag_name,))
+                    db.commit()
+            
+            # fetching all tags again for the next rendering of the page
+            all_tags = db.execute('SELECT * FROM tags').fetchall()
+            
+            
+            currently_selected_tags_names = request.form.getlist('tag')
+            selected_tags_names = [tag['name'] for tag in selected_tags]
+            
+            # insert the newly selected tags that are not already in the database
+            for tag_name in currently_selected_tags_names:
+                if tag_name not in selected_tags_names:
+                    tag_row = db.execute('SELECT * FROM tags WHERE name=?', (tag_name,)).fetchone()
+                    tag_id = tag_row['id']
+                    db.execute('INSERT INTO notes_tags(note_id, tag_id) VALUES (?, ?)', (note_id, tag_id))
+                    db.commit()
+            
+            # delete the tags from the database that are not selected anymore
+            for tag in selected_tags:
+                if tag['name'] not in currently_selected_tags_names:
+                    db.execute('DELETE FROM notes_tags WHERE (note_id=? AND tag_id=?)', (note_id, tag['id']))
+                    db.commit()
+            
+            
+            selected_tags = db.execute('SELECT id, name FROM notes_tags JOIN tags ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
+
             flash('Note saved.')
 
             current_note['updated_at'] = timestamp
@@ -100,32 +156,6 @@ def edit(note_id):
 
         current_note['title'] = title
         current_note['content'] = content
-        
-        
-        new_tags = request.form['new_tags']
-        if new_tags != "":
-            new_tags = new_tags.split(',')
-            for tag_name in new_tags:
-                db.execute('INSERT INTO tags(name) VALUES (?)', (tag_name,))
-                db.commit()
-        
-        all_tags = db.execute('SELECT * FROM tags').fetchall()
-        
-        
-        currently_selected_tags = request.form.getlist('tag')
-        
-        # for tag in currently_selected_tags:
-        #     if tag not in selected_tags:
-        #         tag_row = db.execute('SELECT * FROM tags WHERE name=?', (tag_name,)).fetchone()
-        #         tag_id = tag_row['id']
-        #         db.execute('INSERT INTO note_tags(note_id, tag_id) VALUES (?, ?)', (note_id, tag_id))
-        #         db.commit()
-        
-        
-        
-        
-        selected_tags = currently_selected_tags
-        
 
     return render_template('/notes/view_note.html', current_note=current_note, all_tags=all_tags, selected_tags=selected_tags, enumerate=enumerate)
 

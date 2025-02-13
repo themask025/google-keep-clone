@@ -14,11 +14,21 @@ def index():
         user_id = session.get('user_id')
         notes_rows = db.execute(
             'SELECT * FROM notes WHERE creator_id = ?', (user_id,)).fetchall()
-
+        
+        notes = [dict(note) for note in notes_rows]
+        
+        for note in notes:
+            
+            note_id = note['id']
+            note_tags = db.execute('SELECT id, name FROM notes_tags JOIN tags ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
+            note_tags_names = [tag['name'] for tag in note_tags]
+            note_tags_names = ', '.join(note_tags_names)
+            note['tags'] = note_tags_names
+            
     else:
         notes_rows = []
 
-    return render_template("notes/index.html", notes_rows=notes_rows, len=len)
+    return render_template("notes/index.html", notes_rows=notes_rows, len=len, notes=notes)
 
 
 @bp.route('/create', methods=('GET', 'POST'))

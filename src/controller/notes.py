@@ -2,7 +2,6 @@ from flask import Blueprint, flash, g, redirect, render_template, request, sessi
 from datetime import datetime
 
 from src.model.database import get_db
-# from src.model import tags
 
 
 bp = Blueprint('notes', __name__, url_prefix='/notes')
@@ -30,7 +29,7 @@ def create():
 
     # fetched from tags table
     all_tags = db.execute('SELECT * FROM tags').fetchall()
-    
+
     # fetched from notes_tags table
     selected_tags = []
 
@@ -46,6 +45,7 @@ def create():
             error = 'Content is required.'
 
         if error is None:
+
             db = get_db()
             cursor = db.execute(
                 'INSERT INTO notes(creator_id, title, content) VALUES (?, ?, ?)',
@@ -54,23 +54,26 @@ def create():
             db.commit()
 
             created_note_id = cursor.lastrowid
-            
+
             # adding newly created tags to tags table in the database
             new_tags = request.form['new_tags']
             if new_tags != "":
                 new_tags = new_tags.split(',')
                 for tag_name in new_tags:
-                    db.execute('INSERT INTO tags(name) VALUES (?)', (tag_name,))
+                    db.execute(
+                        'INSERT INTO tags(name) VALUES (?)', (tag_name,))
                     db.commit()
 
             currently_selected_tags_names = request.form.getlist('tag')
             note_id = created_note_id
-            
+
             # insert the newly selected tags that are not already in the database
             for tag_name in currently_selected_tags_names:
-                tag_row = db.execute('SELECT * FROM tags WHERE name=?', (tag_name,)).fetchone()
+                tag_row = db.execute(
+                    'SELECT * FROM tags WHERE name=?', (tag_name,)).fetchone()
                 tag_id = tag_row['id']
-                db.execute('INSERT INTO notes_tags(note_id, tag_id) VALUES (?, ?)', (note_id, tag_id))
+                db.execute(
+                    'INSERT INTO notes_tags(note_id, tag_id) VALUES (?, ?)', (note_id, tag_id))
                 db.commit()
 
             return redirect(url_for('notes.edit', note_id=created_note_id))
@@ -89,70 +92,90 @@ def edit(note_id):
     current_note_row = db.execute(
         'SELECT * FROM notes WHERE id = ?', (note_id,)).fetchone()
     current_note = dict(current_note_row)
-    
+
     # fetched from tags table
     all_tags = db.execute('SELECT * FROM tags').fetchall()
-    
+
     # fetched from notes_tags table
-    selected_tags = db.execute('SELECT id, name FROM notes_tags JOIN tags ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
+    selected_tags = db.execute(
+        'SELECT id, name FROM notes_tags JOIN tags ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
 
     if request.method == 'POST':
+
+        if request.form.get('submit_tag_button') is not None:
+            submitted_data_type = 'new_tag'
+        elif request.form.get('submit_note_button') is not None:
+            submitted_data_type = 'note'
+
         title = request.form['title']
         content = request.form['content']
-        timestamp = datetime.now().isoformat(sep=' ', timespec='seconds')
 
         error = None
 
-        if title is None:
-            error = 'A title is required.'
-        elif content is None:
-            error = 'Content is required.'
+        if submitted_data_type == 'new_tag':
+            tag_name = request.form.get('new_tag_name')
+            if tag_name is None or tag_name == "":
+                error = 'The name of the tag cannot be empty.'
+            
+            all_tags_names = [tag['name'] for tag in all_tags]
+            if tag_name in all_tags_names:
+                error = 'The tag already exists.'
+            
+            if error is None:        
+                # add the new tag to the tags table
+                cursor = db.execute(
+                    'INSERT INTO tags(name) VALUES (?)', (tag_name,))
+                db.commit()
 
-        if error is None:
-            note_id = current_note['id']
-            db.execute(
-                f'UPDATE notes SET (title, content, updated_at) = (?, ?, ?) WHERE id={note_id}',
-                (title, content, timestamp)
-            )
-            db.commit()
+                # refresh tag data for the rendering of the page
+                all_tags = db.execute('SELECT * FROM tags').fetchall()
+            else:
+                flash(error)
 
-            # adding newly created tags to tags table in the database
-            new_tags = request.form['new_tags']
-            if new_tags != "":
-                new_tags = new_tags.split(',')
-                for tag_name in new_tags:
-                    db.execute('INSERT INTO tags(name) VALUES (?)', (tag_name,))
-                    db.commit()
+        if submitted_data_type == 'note':
             
-            # fetching all tags again for the next rendering of the page
-            all_tags = db.execute('SELECT * FROM tags').fetchall()
-            
-            
-            currently_selected_tags_names = request.form.getlist('tag')
-            selected_tags_names = [tag['name'] for tag in selected_tags]
-            
-            # insert the newly selected tags that are not already in the database
-            for tag_name in currently_selected_tags_names:
-                if tag_name not in selected_tags_names:
-                    tag_row = db.execute('SELECT * FROM tags WHERE name=?', (tag_name,)).fetchone()
-                    tag_id = tag_row['id']
-                    db.execute('INSERT INTO notes_tags(note_id, tag_id) VALUES (?, ?)', (note_id, tag_id))
-                    db.commit()
-            
-            # delete the tags from the database that are not selected anymore
-            for tag in selected_tags:
-                if tag['name'] not in currently_selected_tags_names:
-                    db.execute('DELETE FROM notes_tags WHERE (note_id=? AND tag_id=?)', (note_id, tag['id']))
-                    db.commit()
-            
-            
-            selected_tags = db.execute('SELECT id, name FROM notes_tags JOIN tags ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
+            if title is None:
+                error = 'A title is required.'
+            elif content is None:
+                error = 'Content is required.'
 
-            flash('Note saved.')
+            if error is None:
+                # updating notes database table
+                timestamp = datetime.now().isoformat(sep=' ', timespec='seconds')
+                note_id = current_note['id']
+                db.execute(
+                    f'UPDATE notes SET (title, content, updated_at) = (?, ?, ?) WHERE id={note_id}',
+                    (title, content, timestamp)
+                )
+                db.commit()
 
-            current_note['updated_at'] = timestamp
-        else:
-            flash(error)
+                currently_selected_tags_names = request.form.getlist('tag')
+                selected_tags_names = [tag['name'] for tag in selected_tags]
+
+                # insert the newly selected tags that are not already in the database
+                for tag_name in currently_selected_tags_names:
+                    if tag_name not in selected_tags_names:
+                        tag_row = db.execute(
+                            'SELECT * FROM tags WHERE name=?', (tag_name,)).fetchone()
+                        tag_id = tag_row['id']
+                        db.execute(
+                            'INSERT INTO notes_tags(note_id, tag_id) VALUES (?, ?)', (note_id, tag_id))
+                        db.commit()
+
+                # delete the tags from the database that are not selected anymore
+                for tag in selected_tags:
+                    if tag['name'] not in currently_selected_tags_names:
+                        db.execute(
+                            'DELETE FROM notes_tags WHERE (note_id=? AND tag_id=?)', (note_id, tag['id']))
+                        db.commit()
+
+                flash('Note saved.')
+                
+                current_note['updated_at'] = timestamp
+                selected_tags = db.execute(
+                    'SELECT id, name FROM notes_tags JOIN tags ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
+            else:
+                flash(error)
 
         current_note['title'] = title
         current_note['content'] = content

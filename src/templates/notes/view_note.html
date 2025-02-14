@@ -39,7 +39,7 @@
                 <label for="tag{{i}}">{{tag['name']}}</label>
             {% endfor %}
         </div>
-        <input type="text" name="new_tag_name" id="tag_inputbox" placeholder="Add a new tag..." >
+        <input type="text" name="new_tag_name" id="tag_inputbox" placeholder="Add a new tag..." value="{{current_note['new_tag_name']}}">
         <input type="submit" name="submit_tag_button" value="Add">
 
         <input type="text" id="new_tags" name="new_tags" hidden>

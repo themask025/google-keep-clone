@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    {% block title %}
+        <h1>Edit tags</h1>
+    {% endblock %}
+{% endblock %}
+
+{% block content %}
+    <a href="{{ url_for('notes.index') }}">Back to notes</a>
+
+    <form method="post">
+        <input type="text" name="new_tag_name" id="new_tag_input" placeholder="Add a new tag...">
+        <input type="submit" name="create_tag" id="create_tag_button" value="Create tag">
+        {% for tag in tags %}
+        <section class="tag_preview">
+            <input type="text" name="tag_{{tag['id']}}" id="tag_{{tag['id']}}_input" value="{{tag['name']}}">
+            <input type="submit" name="update_tag_{{tag['id']}}" id="tag_{{tag['id']}}_update_button" value="Update name">
+            <input type="submit" name="delete_tag_{{tag['id']}}" id="tag_{{tag['id']}}_delete_button" value="Delete">
+        </section>
+        {% endfor %}
+    </form>
+
+{% endblock %}

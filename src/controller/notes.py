@@ -27,6 +27,7 @@ def index():
             
     else:
         notes_rows = []
+        notes = []
 
     return render_template("notes/index.html", notes_rows=notes_rows, len=len, notes=notes)
 

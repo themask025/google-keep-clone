@@ -1,7 +1,7 @@
 from flask import Flask, redirect, url_for
 import os
 from src.model import database
-from src.controller import auth, notes
+from src.controller import auth, notes, tags
 
 
 def create_app(test_config=None):
@@ -24,6 +24,7 @@ def create_app(test_config=None):
     
     app.register_blueprint(auth.bp)
     app.register_blueprint(notes.bp)
+    app.register_blueprint(tags.bp)
     
     app.add_url_rule('/notes/', endpoint='index')
     

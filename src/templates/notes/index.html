@@ -9,14 +9,19 @@
     {% if session['user_id'] %}    
         <h1>Hello {{session['username']}}</h1>
 
+        <a href="{{ url_for('tags.edit') }}">Edit tags</a>
         <a href="{{ url_for('notes.create') }}">Create a new note</a>
 
-        {% for note in notes_rows %}
+        {% for note in notes %}
             <section class="note-preview">
                 <h3>{{note['title']}}</h3>
                 <p>{{note['content'][:50]}}{% if len(note['content']) > 50 %}...{% endif %}</p>
+                {% if note['tags'] != "" %}
+                    <p>Tags: {{note['tags']}}</p>
+                {% else %}
+                    <p>No tags</p>
+                {% endif %}
                 <a href="{{url_for('notes.edit', note_id=note['id'])}}">View note</a>
-                <!-- <a href="{{url_for('notes.delete', note_id=note['id'])}}">View note</a> -->
                  <form action="{{ url_for('notes.delete', note_id=note['id']) }}" method="post">  
                     <input type="submit" name="delete-note-button" id="delete-note-button" value="Delete note">
                  </form>

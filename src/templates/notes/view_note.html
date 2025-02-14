@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% set title_creating = 'Create note' %}
+{% set title_editing = 'View note' %}
+
+{% block title %}
+    {% if not current_note %}
+        {{title_creating}}
+    {% else %}
+        {{title_editing}}
+    {% endif %}
+{% endblock %}
+
+{% block header %}
+    {% if not current_note %}
+        <h1>{{title_creating}}</h1>
+    {% else%}
+        <h1>{{title_editing}}</h1>
+    {% endif %}
+    <a href="{{url_for('notes.index')}}">Back to all notes</a>
+{% endblock %}
+
+{% block content %}
+    {% if current_note %}
+        <p>Last edited: {{ current_note['updated_at'] }}</p>
+    {% endif %}
+
+    <form method="post">
+        <div id="tags_container">
+            {% for i, tag in enumerate(all_tags) %}
+                <input type="checkbox"
+                       name="tag" 
+                       id="tag{{i}}" 
+                       value="{{tag['name']}}"
+                       {% if tag in selected_tags %}
+                            checked
+                       {% endif %}
+                >
+                <label for="tag{{i}}">{{tag['name']}}</label>
+            {% endfor %}
+        </div>
+        <input type="text" name="new_tag_name" id="tag_inputbox" placeholder="Add a new tag..." >
+        <input type="submit" name="submit_tag_button" value="Add">
+
+        <input type="text" id="new_tags" name="new_tags" hidden>
+
+        <label for="title">Title</label>
+        <input type="text" name="title" id="title" value="{{ current_note['title'] }}" required>
+        <label for="content">Content</label>
+        <textarea name="content" id="content" rows="10" cols="50" required>{{ current_note['content'] }}</textarea>
+        <input type="submit" name="submit_note_button" value="Save">
+    </form>
+
+{% endblock %}

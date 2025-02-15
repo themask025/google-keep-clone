@@ -1,9 +1,8 @@
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 from datetime import datetime
 
-from src.model.database import get_db
 from src.model.note import fetch_all_notes_by_user_id, fetch_note_by_id, insert_note_into_database, update_note_in_database, delete_note_by_id
-from src.model.tag import insert_tag_into_database, fetch_all_tags, validate_new_tag_name
+from src.model.tag import insert_tag_into_database, fetch_all_tags_by_creator_id, validate_new_tag_name
 from src.model.note_tag import insert_newly_selected_tags, fetch_selected_tags_by_note_id, update_selected_tags_in_database
 
 
@@ -33,8 +32,9 @@ def index():
 
 @bp.route('/create', methods=('GET', 'POST'))
 def create():
+    user_id = session.get('user_id')
     current_note = None
-    all_tags = fetch_all_tags()
+    all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
     selected_tags = []
 
     if request.method == 'POST':
@@ -47,12 +47,12 @@ def create():
 
         if submitted_data_type == 'new_tag':
             tag_name = new_tag_name
-            error = validate_new_tag_name(tag_name)
+            error = validate_new_tag_name(creator_id=user_id, tag_name=tag_name)
             if error is None:
-                insert_tag_into_database(tag_name)
+                insert_tag_into_database(creator_id=user_id, tag_name=tag_name)
                 
             flash(error)
-            all_tags = fetch_all_tags()
+            all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
 
         if submitted_data_type == 'note':
             error = validate_note_title_content(title, content)
@@ -75,6 +75,7 @@ def create():
 
 @bp.route('/edit/<note_id>', methods=('GET', 'POST'))
 def edit(note_id):
+    user_id = session.get('user_id')
     
     if note_id is None:
         return redirect(url_for('notes.index'))
@@ -82,7 +83,7 @@ def edit(note_id):
     current_note_row = fetch_note_by_id(note_id)
     current_note = dict(current_note_row)
 
-    all_tags = fetch_all_tags()
+    all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
     selected_tags = fetch_selected_tags_by_note_id(note_id)
 
     if request.method == 'POST':
@@ -94,12 +95,12 @@ def edit(note_id):
 
         if submitted_data_type == 'new_tag': 
             tag_name = new_tag_name
-            error = validate_new_tag_name(tag_name)
+            error = validate_new_tag_name(creator_id=user_id, tag_name=tag_name)
             if error is None:
-                error = insert_tag_into_database(tag_name)
+                error = insert_tag_into_database(creator_id=user_id, tag_name=tag_name)
             
             flash(error)
-            all_tags = fetch_all_tags()
+            all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
 
         if submitted_data_type == 'note':
             error = validate_note_title_content(title, content)

@@ -1,15 +1,15 @@
 from src.model.database import get_db
 
 
-def insert_tag_into_database(tag_name):
+def insert_tag_into_database(creator_id, tag_name):
     db = get_db()
     db.execute(
-        'INSERT INTO tags(name) VALUES (?)', (tag_name,))
+        'INSERT INTO tags(creator_id, name) VALUES (?, ?)', (creator_id, tag_name,))
     db.commit()
 
-def fetch_all_tags():
+def fetch_all_tags_by_creator_id(creator_id):
     db = get_db()
-    all_tags = db.execute('SELECT * FROM tags').fetchall()
+    all_tags = db.execute('SELECT * FROM tags WHERE creator_id=?', (creator_id,)).fetchall()
     return all_tags
 
 def fetch_tag_by_name(tag_name):
@@ -29,8 +29,8 @@ def delete_tag_by_id(tag_id):
     db.commit()
     
 
-def validate_new_tag_name(tag_name):
-    all_tags = fetch_all_tags()
+def validate_new_tag_name(creator_id, tag_name):
+    all_tags = fetch_all_tags_by_creator_id(creator_id)
     all_tags_names = [tag['name'] for tag in all_tags]
     
     if tag_name is None or tag_name == "":

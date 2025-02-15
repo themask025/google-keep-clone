@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS notes (
   is_pinned INTEGER DEFAULT 0 NOT NULL,
   is_trashed INTEGER DEFAULT 0 NOT NULL,
   is_archived INTEGER DEFAULT 0 NOT NULL,
-  FOREIGN KEY (creator_id) REFERENCES users (id)
+  FOREIGN KEY (creator_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS images (
@@ -44,7 +44,10 @@ CREATE TABLE IF NOT EXISTS collaborators (
 
 CREATE TABLE IF NOT EXISTS tags (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT UNIQUE NOT NULL
+  creator_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  FOREIGN KEY (creator_id) REFERENCES users (id) ON DELETE CASCADE
+  CONSTRAINT unique_creator_tags UNIQUE (creator_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS notes_tags (

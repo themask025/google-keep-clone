@@ -12,6 +12,25 @@
         <a href="{{ url_for('tags.edit') }}">Edit tags</a>
         <a href="{{ url_for('notes.create') }}">Create a new note</a>
 
+        <p>Filter notes by tags:</p>
+        <section class="filter_tags">
+            <form method="post">
+                {% for tag in tags %}
+                    <input type="checkbox" 
+                           name="filter_tag"
+                           id="filter_{{tag['id']}}"
+                           value="{{tag['name']}}"
+                           {% if tag['name'] in selected_filter_tags %}
+                                checked
+                           {% endif %}
+                           >
+                    <label for="filter_{{tag['id']}}">{{tag['name']}}</label>
+                {% endfor %}
+                <input type="submit" name="apply_filter" value="Apply filter">
+                <input type="submit" name="clear_filter" value="Clear filter">
+            </form>
+        </section>
+
         {% for note in notes %}
             <section class="note-preview">
                 <h3>{{note['title']}}</h3>

@@ -2,6 +2,8 @@ import functools
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 from src.model.database import get_db
+from src.model.user import insert_user_into_database, fetch_user_by_username
+
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -17,20 +19,45 @@ def register():
 
         if error is None:
             password_hash = generate_password_hash(password)
-            
-            db = get_db()
-            
-            try:
-                db.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, password_hash,))
-                db.commit()
-            except db.IntegrityError:
-                error = f'User with this username already exists.'
-            else:
-                return redirect(url_for('auth.login'))
+            insert_user_into_database(username, password_hash)
+            return redirect(url_for('auth.login'))
 
         flash(error)
 
     return render_template("auth/register.html")
+
+
+
+@bp.route('/login', methods=('POST', 'GET'))
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        error = None
+
+        db = get_db()
+
+        user = fetch_user_by_username(username)
+        
+        if user is None or check_password_hash(user['password_hash'], password) == False:
+            error = 'Incorrect username/password.'
+            
+        if error is None:
+            session.clear()
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            return redirect(url_for('index'))
+        
+        flash(error)
+    
+    return render_template('auth/login.html')
+
+
+@bp.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
 
 
 def validate_register_input(username: str | None, password: str | None, password_confirmation: str | None) -> str | None:
@@ -51,40 +78,5 @@ def validate_register_input(username: str | None, password: str | None, password
 
 
 def check_user_exists(username: str) -> str | None:
-    db = get_db()
-    user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    user = fetch_user_by_username(username)
     return user is not None
-
-
-@bp.route('/login', methods=('POST', 'GET'))
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        error = None
-
-        db = get_db()
-
-        user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-        
-        # error = str(user['id']) + user['username']
-        
-        if user is None or check_password_hash(user['password_hash'], password) == False:
-            error = 'Incorrect username/password.'
-            
-        if error is None:
-            session.clear()
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            return redirect(url_for('index'))
-        
-        flash(error)
-    
-    return render_template('auth/login.html')
-
-
-@bp.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('index'))

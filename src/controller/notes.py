@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from datetime import datetime
 
 from src.model.note import (fetch_all_notes_by_user_id, fetch_note_by_id, fetch_user_notes_by_tags,
@@ -19,15 +19,24 @@ def index():
 
         if request.method == 'POST':
             if request.form.get('apply_filter') is not None:
-                selected_filter_tags = request.form.getlist('filter_tag') # can be None
+                selected_filter_tags = request.form.getlist(
+                    'filter_tag')  # can be None
                 session['filter_tags'] = selected_filter_tags
 
             elif request.form.get('clear_filter') is not None:
                 session['filter_tags'] = None
 
+            elif request.form.get('search_button') is not None:
+                search_expression = request.form.get('search_expression')
+                session['search_expression'] = search_expression
+
+            elif request.form.get('clear_search') is not None:
+                session['search_expression'] = None
+
         selected_filter_tags = session.get('filter_tags')
         if selected_filter_tags is not None:
-            notes_rows = fetch_user_notes_by_tags(user_id, filter_tags = selected_filter_tags)
+            notes_rows = fetch_user_notes_by_tags(
+                user_id, filter_tags=selected_filter_tags)
         else:
             selected_filter_tags = []
             notes_rows = fetch_all_notes_by_user_id(user_id)
@@ -41,6 +50,10 @@ def index():
             note_tags_names = ', '.join(note_tags_names)
             note['tags'] = note_tags_names
 
+        search_expression = session.get('search_expression')
+        if search_expression is not None:
+            notes = filter_notes_by_search_expression(notes, search_expression)
+
         tags = fetch_all_tags_by_creator_id(creator_id=user_id)
 
     else:
@@ -49,7 +62,13 @@ def index():
         tags = []
         selected_filter_tags = []
 
-    return render_template("notes/index.html", notes_rows=notes_rows, len=len, notes=notes, tags=tags, selected_filter_tags=selected_filter_tags)
+    return render_template("notes/index.html",
+                           notes_rows=notes_rows,
+                           len=len,
+                           notes=notes,
+                           tags=tags,
+                           selected_filter_tags=selected_filter_tags,
+                           search_expression=search_expression)
 
 
 @bp.route('/create', methods=('GET', 'POST'))
@@ -85,7 +104,7 @@ def create():
                 currently_selected_tags_names = request.form.getlist('tag')
                 insert_newly_selected_tags(
                     currently_selected_tags_names, selected_tags, note_id)
-                
+
                 return redirect(url_for('notes.edit', note_id=note_id))
 
             flash(error)
@@ -93,7 +112,11 @@ def create():
         current_note = dict(title=title, content=content,
                             new_tag_name=new_tag_name)
 
-    return render_template('notes/view_note.html', current_note=current_note, all_tags=all_tags, selected_tags=selected_tags, enumerate=enumerate)
+    return render_template('notes/view_note.html',
+                           current_note=current_note,
+                           all_tags=all_tags,
+                           selected_tags=selected_tags,
+                           enumerate=enumerate)
 
 
 @bp.route('/edit/<note_id>', methods=('GET', 'POST'))
@@ -147,7 +170,11 @@ def edit(note_id):
         current_note['title'] = title
         current_note['content'] = content
 
-    return render_template('/notes/view_note.html', current_note=current_note, all_tags=all_tags, selected_tags=selected_tags, enumerate=enumerate)
+    return render_template('/notes/view_note.html',
+                           current_note=current_note,
+                           all_tags=all_tags,
+                           selected_tags=selected_tags,
+                           enumerate=enumerate)
 
 
 @bp.route('/delete/<note_id>', methods=('POST',))
@@ -156,6 +183,18 @@ def delete(note_id):
         delete_note_by_id(note_id)
 
     return redirect(url_for('notes.index'))
+
+
+def filter_notes_by_search_expression(notes, search_expression):
+    result = []
+
+    for note in notes:
+        if any((search_expression in note.get('title'),
+                search_expression in note.get('content'),
+                *(search_expression in tag_name for tag_name in note.get('tags').split(', ')))):
+            result.append(note)
+
+    return result
 
 
 def validate_note_title_content(title, content):

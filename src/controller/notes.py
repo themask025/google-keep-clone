@@ -1,33 +1,55 @@
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 from datetime import datetime
 
-from src.model.note import fetch_all_notes_by_user_id, fetch_note_by_id, insert_note_into_database, update_note_in_database, delete_note_by_id
-from src.model.tag import insert_tag_into_database, fetch_all_tags_by_creator_id, validate_new_tag_name
-from src.model.note_tag import insert_newly_selected_tags, fetch_selected_tags_by_note_id, update_selected_tags_in_database
+from src.model.note import (fetch_all_notes_by_user_id, fetch_note_by_id, fetch_user_notes_by_tags,
+                            insert_note_into_database, update_note_in_database, delete_note_by_id)
+from src.model.tag import (insert_tag_into_database,
+                           fetch_all_tags_by_creator_id, validate_new_tag_name)
+from src.model.note_tag import (
+    insert_newly_selected_tags, fetch_selected_tags_by_note_id, update_selected_tags_in_database)
 
 
 bp = Blueprint('notes', __name__, url_prefix='/notes')
 
 
-@bp.route('/', methods=('GET',))
+@bp.route('/', methods=('GET', 'POST'))
 def index():
     if session.get('user_id') is not None:
-        user_id = session.get('user_id')        
-        notes_rows = fetch_all_notes_by_user_id(user_id)
+        user_id = session.get('user_id')
+
+        if request.method == 'POST':
+            if request.form.get('apply_filter') is not None:
+                selected_filter_tags = request.form.getlist('filter_tag') # can be None
+                session['filter_tags'] = selected_filter_tags
+
+            elif request.form.get('clear_filter') is not None:
+                session['filter_tags'] = None
+
+        selected_filter_tags = session.get('filter_tags')
+        if selected_filter_tags is not None:
+            notes_rows = fetch_user_notes_by_tags(user_id, filter_tags = selected_filter_tags)
+        else:
+            selected_filter_tags = []
+            notes_rows = fetch_all_notes_by_user_id(user_id)
+
         notes = [dict(note) for note in notes_rows]
-        
+
         for note in notes:
             note_id = note['id']
             note_tags = fetch_selected_tags_by_note_id(note_id)
             note_tags_names = [tag['name'] for tag in note_tags]
             note_tags_names = ', '.join(note_tags_names)
             note['tags'] = note_tags_names
-            
+
+        tags = fetch_all_tags_by_creator_id(creator_id=user_id)
+
     else:
         notes_rows = []
         notes = []
+        tags = []
+        selected_filter_tags = []
 
-    return render_template("notes/index.html", notes_rows=notes_rows, len=len, notes=notes)
+    return render_template("notes/index.html", notes_rows=notes_rows, len=len, notes=notes, tags=tags, selected_filter_tags=selected_filter_tags)
 
 
 @bp.route('/create', methods=('GET', 'POST'))
@@ -47,10 +69,11 @@ def create():
 
         if submitted_data_type == 'new_tag':
             tag_name = new_tag_name
-            error = validate_new_tag_name(creator_id=user_id, tag_name=tag_name)
+            error = validate_new_tag_name(
+                creator_id=user_id, tag_name=tag_name)
             if error is None:
                 insert_tag_into_database(creator_id=user_id, tag_name=tag_name)
-                
+
             flash(error)
             all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
 
@@ -59,16 +82,16 @@ def create():
 
             if error is None:
                 note_id = insert_note_into_database(creator_id, title, content)
-                
                 currently_selected_tags_names = request.form.getlist('tag')
-
-                insert_newly_selected_tags(currently_selected_tags_names, selected_tags, note_id)
-
-                return redirect(url_for('notes.edit', note_id=note_id))
-            
-            flash(error)
+                insert_newly_selected_tags(
+                    currently_selected_tags_names, selected_tags, note_id)
                 
-        current_note = dict(title = title, content = content, new_tag_name = new_tag_name)
+                return redirect(url_for('notes.edit', note_id=note_id))
+
+            flash(error)
+
+        current_note = dict(title=title, content=content,
+                            new_tag_name=new_tag_name)
 
     return render_template('notes/view_note.html', current_note=current_note, all_tags=all_tags, selected_tags=selected_tags, enumerate=enumerate)
 
@@ -76,7 +99,7 @@ def create():
 @bp.route('/edit/<note_id>', methods=('GET', 'POST'))
 def edit(note_id):
     user_id = session.get('user_id')
-    
+
     if note_id is None:
         return redirect(url_for('notes.index'))
 
@@ -93,12 +116,14 @@ def edit(note_id):
 
         submitted_data_type = check_submitted_data_type(request)
 
-        if submitted_data_type == 'new_tag': 
+        if submitted_data_type == 'new_tag':
             tag_name = new_tag_name
-            error = validate_new_tag_name(creator_id=user_id, tag_name=tag_name)
+            error = validate_new_tag_name(
+                creator_id=user_id, tag_name=tag_name)
             if error is None:
-                error = insert_tag_into_database(creator_id=user_id, tag_name=tag_name)
-            
+                error = insert_tag_into_database(
+                    creator_id=user_id, tag_name=tag_name)
+
             flash(error)
             all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
 
@@ -108,9 +133,11 @@ def edit(note_id):
             if error is None:
                 timestamp = datetime.now().isoformat(sep=' ', timespec='seconds')
                 note_id = current_note['id']
-                update_note_in_database(note_id=note_id, title=title, content=content, updated_at=timestamp)
+                update_note_in_database(
+                    note_id=note_id, title=title, content=content, updated_at=timestamp)
                 currently_selected_tags_names = request.form.getlist('tag')
-                update_selected_tags_in_database(currently_selected_tags_names, selected_tags, note_id)
+                update_selected_tags_in_database(
+                    currently_selected_tags_names, selected_tags, note_id)
                 flash('Note saved.')
                 current_note['updated_at'] = timestamp
                 selected_tags = fetch_selected_tags_by_note_id(note_id)

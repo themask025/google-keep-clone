@@ -90,7 +90,8 @@ def create():
     if request.method == 'POST':
         creator_id = session['user_id']
         title = request.form.get('title')
-        content = request.form.get('content')
+        content = request.form.get('content')        
+        currently_selected_tags_names = request.form.getlist('tag')
         new_tag_name = request.form.get('new_tag_name')
 
         if request.form.get('submit_tag_button') is not None:
@@ -118,6 +119,7 @@ def create():
 
         current_note = dict(title=title, content=content,
                             new_tag_name=new_tag_name)
+        selected_tags = [tag for tag in all_tags if tag['name'] in currently_selected_tags_names]
 
     return render_template('notes/view_note.html',
                            current_note=current_note,
@@ -137,13 +139,15 @@ def edit(note_id):
     current_note = dict(current_note_row)
 
     all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
-    selected_tags = fetch_selected_tags_by_note_id(note_id)
-
+    selected_tags = fetch_selected_tags_by_note_id(note_id=note_id)
+    
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
-        # fetch due date
+        
         new_tag_name = request.form.get('new_tag_name')
+        currently_selected_tags_names = request.form.getlist('tag')
+        note_submitted = False
 
         if request.form.get('submit_tag_button') is not None:
             tag_name = new_tag_name
@@ -164,12 +168,13 @@ def edit(note_id):
                 note_id = current_note['id']
                 update_note_in_database(
                     note_id=note_id, title=title, content=content, updated_at=timestamp)
-                currently_selected_tags_names = request.form.getlist('tag')
+
                 update_selected_tags_in_database(
                     currently_selected_tags_names, selected_tags, note_id)
                 flash('Note saved.')    
                 current_note['updated_at'] = timestamp
-                selected_tags = fetch_selected_tags_by_note_id(note_id)
+                
+                note_submitted = True
             else:
                 flash(error)
 
@@ -199,6 +204,11 @@ def edit(note_id):
         elif request.form.get('due_date_remove_button') is not None:
             remove_due_date_from_database(note_id)
             current_note['due_date'] = None
+
+        if note_submitted == True:
+            selected_tags = fetch_selected_tags_by_note_id(note_id)
+        else:
+            selected_tags = [tag for tag in all_tags if tag['name'] in currently_selected_tags_names]
 
         current_note['title'] = title
         current_note['content'] = content

@@ -1,12 +1,20 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from datetime import datetime
 
-from src.model.note import (fetch_all_notes_by_user_id, fetch_note_by_id, fetch_user_notes_by_tags,
-                            insert_note_into_database, update_note_in_database, delete_note_by_id)
+from src.model.note import (fetch_all_notes_by_user_id,
+                            fetch_note_by_id,
+                            fetch_user_notes_by_tags,
+                            insert_note_into_database,
+                            update_note_in_database,
+                            update_due_date_in_database,
+                            remove_due_date_from_database,
+                            delete_note_by_id)
 from src.model.tag import (insert_tag_into_database,
-                           fetch_all_tags_by_creator_id, validate_new_tag_name)
-from src.model.note_tag import (
-    insert_newly_selected_tags, fetch_selected_tags_by_note_id, update_selected_tags_in_database)
+                           fetch_all_tags_by_creator_id,
+                           validate_new_tag_name)
+from src.model.note_tag import (insert_newly_selected_tags,
+                                fetch_selected_tags_by_note_id,
+                                update_selected_tags_in_database)
 
 
 bp = Blueprint('notes', __name__, url_prefix='/notes')
@@ -59,8 +67,9 @@ def index():
     else:
         notes_rows = []
         notes = []
-        tags = []
         selected_filter_tags = []
+        search_expression = None
+        tags = []
 
     return render_template("notes/index.html",
                            notes_rows=notes_rows,
@@ -84,9 +93,7 @@ def create():
         content = request.form.get('content')
         new_tag_name = request.form.get('new_tag_name')
 
-        submitted_data_type = check_submitted_data_type(request)
-
-        if submitted_data_type == 'new_tag':
+        if request.form.get('submit_tag_button') is not None:
             tag_name = new_tag_name
             error = validate_new_tag_name(
                 creator_id=user_id, tag_name=tag_name)
@@ -96,7 +103,7 @@ def create():
             flash(error)
             all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
 
-        if submitted_data_type == 'note':
+        elif request.form.get('submit_note_button') is not None:
             error = validate_note_title_content(title, content)
 
             if error is None:
@@ -135,22 +142,21 @@ def edit(note_id):
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
+        # fetch due date
         new_tag_name = request.form.get('new_tag_name')
 
-        submitted_data_type = check_submitted_data_type(request)
-
-        if submitted_data_type == 'new_tag':
+        if request.form.get('submit_tag_button') is not None:
             tag_name = new_tag_name
             error = validate_new_tag_name(
                 creator_id=user_id, tag_name=tag_name)
             if error is None:
-                error = insert_tag_into_database(
+                insert_tag_into_database(
                     creator_id=user_id, tag_name=tag_name)
-
-            flash(error)
+            else:
+                flash(error)
             all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
 
-        if submitted_data_type == 'note':
+        elif request.form.get('submit_note_button') is not None:
             error = validate_note_title_content(title, content)
 
             if error is None:
@@ -161,11 +167,38 @@ def edit(note_id):
                 currently_selected_tags_names = request.form.getlist('tag')
                 update_selected_tags_in_database(
                     currently_selected_tags_names, selected_tags, note_id)
-                flash('Note saved.')
+                flash('Note saved.')    
                 current_note['updated_at'] = timestamp
                 selected_tags = fetch_selected_tags_by_note_id(note_id)
             else:
                 flash(error)
+
+        elif request.form.get('due_date_submit_button') is not None:
+            due_date = request.form.get('due_date')
+
+            error = None
+            due_date_formatted = due_date
+
+            if due_date is not None:
+                try:
+                    due_date_formatted = datetime.fromisoformat(due_date)
+                except ValueError:
+                    error = 'The entered due date format is invalid.'
+
+            if error is None:
+                due_date_formatted = due_date_formatted.isoformat(
+                    sep=' ', timespec='seconds')
+                update_due_date_in_database(
+                    note_id=note_id, new_due_date=due_date_formatted)
+
+            else:
+                flash(error)
+
+            current_note['due_date'] = due_date_formatted
+
+        elif request.form.get('due_date_remove_button') is not None:
+            remove_due_date_from_database(note_id)
+            current_note['due_date'] = None
 
         current_note['title'] = title
         current_note['content'] = content
@@ -203,10 +236,3 @@ def validate_note_title_content(title, content):
     elif content is None:
         return 'Content is required.'
     return None
-
-
-def check_submitted_data_type(request):
-    if request.form.get('submit_tag_button') is not None:
-        return 'new_tag'
-    elif request.form.get('submit_note_button') is not None:
-        return 'note'

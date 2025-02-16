@@ -50,6 +50,11 @@
                 {% else %}
                     <p>No tags</p>
                 {% endif %}
+                {% if note['due_date'] %}
+                    <p>Due date: {{ note['due_date'] }}</p>
+                {% else %}
+                    <p>No due date</p>
+                {% endif %}
                 <a href="{{url_for('notes.edit', note_id=note['id'])}}">View note</a>
                  <form action="{{ url_for('notes.delete', note_id=note['id']) }}" method="post">  
                     <input type="submit" name="delete-note-button" id="delete-note-button" value="Delete note">

@@ -20,7 +20,7 @@ def insert_newly_selected_tags(currently_selected_tags_names, selected_tags, not
 def fetch_selected_tags_by_note_id(note_id):
     db = get_db()
     selected_tags = db.execute(
-        'SELECT id, name FROM notes_tags JOIN tags ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
+        'SELECT t.* FROM notes_tags nt JOIN tags t ON tag_id = id WHERE note_id=?', (note_id,)).fetchall()
     return selected_tags
 
 def update_selected_tags_in_database(currently_selected_tags_names, selected_tags, note_id):

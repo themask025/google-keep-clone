@@ -7,8 +7,12 @@
   <h1>Google Keep Clone</h1>
   <ul>
     {% if session.get('user_id') %}
-      <li><span>{{ session.get('username') }}</span>
-      <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
+    <form action="{{ url_for('auth.logout') }}" method="post">
+      <label for="logout_button">{{ session.get('username') }}</label>
+      <input type="submit" name="logout_button" id="logout_button" value="Log out">
+    </form>
+      <!-- <li><span>{{ session.get('username') }}</span>
+      <li><a href="{{ url_for('auth.logout') }}">Log Out</a> -->
     {% else %}
       <li><a href="{{ url_for('auth.register') }}">Register</a>
       <li><a href="{{ url_for('auth.login') }}">Log In</a>

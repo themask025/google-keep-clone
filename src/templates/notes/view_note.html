@@ -26,6 +26,18 @@
     {% endif %}
 
     <form method="post">
+    </form>
+    
+    <form method="post">
+        <label for="due_date">Due Date</label>
+        <input type="text" name="due_date" id="due_date", placeholder="YYYY-MM-DD HH:MM"
+        {% if current_note['due_date'] %}
+            value="{{current_note['due_date']}}"
+        {% endif %}
+        >
+        <input type="submit" name="due_date_submit_button" value="Set">
+        <input type="submit" name="due_date_remove_button" value="Remove">
+
         <div id="tags_container">
             {% for i, tag in enumerate(all_tags) %}
                 <input type="checkbox"

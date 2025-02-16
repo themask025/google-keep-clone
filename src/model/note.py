@@ -43,8 +43,6 @@ def fetch_user_notes_by_tags(user_id, filter_tags):
     
     stmt += stmt_suffix
     
-    # return stmt
-    
     notes_rows = db.execute(stmt, (user_id, *filter_tags))
     
     return notes_rows
@@ -56,6 +54,16 @@ def update_note_in_database(note_id, title, content, updated_at):
     f'UPDATE notes SET (title, content, updated_at) = (?, ?, ?) WHERE id={note_id}',
     (title, content, updated_at)
     )
+    db.commit()
+    
+def update_due_date_in_database(note_id, new_due_date):
+    db = get_db()
+    db.execute('UPDATE notes SET due_date = ? WHERE id = ?', (new_due_date, note_id))
+    db.commit()
+    
+def remove_due_date_from_database(note_id):
+    db = get_db()
+    db.execute('UPDATE notes SET due_date = NULL where id = ?', (note_id,))
     db.commit()
 
 def delete_note_by_id(note_id):

@@ -40,6 +40,14 @@ def index():
 
             elif request.form.get('clear_search') is not None:
                 session['search_expression'] = None
+                
+            elif request.form.get('submit_sorting') is not None:
+                sorting_type = request.form.get('sorting_type')
+                if sorting_type is not None:
+                    session['sorting_type'] = sorting_type
+            
+            elif request.form.get('clear_sorting') is not None:
+                session['sorting_type'] = None
 
         selected_filter_tags = session.get('filter_tags')
         if selected_filter_tags is not None:
@@ -61,6 +69,10 @@ def index():
         search_expression = session.get('search_expression')
         if search_expression is not None:
             notes = filter_notes_by_search_expression(notes, search_expression)
+            
+        sorting_type = session.get('sorting_type')
+        if sorting_type is not None:
+            notes = sort_notes(notes, sorting_type)
 
         tags = fetch_all_tags_by_creator_id(creator_id=user_id)
 
@@ -77,7 +89,8 @@ def index():
                            notes=notes,
                            tags=tags,
                            selected_filter_tags=selected_filter_tags,
-                           search_expression=search_expression)
+                           search_expression=search_expression,
+                           sorting_type=sorting_type)
 
 
 @bp.route('/create', methods=('GET', 'POST'))
@@ -237,6 +250,17 @@ def filter_notes_by_search_expression(notes, search_expression):
                 *(search_expression in tag_name for tag_name in note.get('tags').split(', ')))):
             result.append(note)
 
+    return result
+
+
+def sort_notes(notes: list[dict], sorting_type:str) -> list[dict]:
+    for_sorting = [note for note in notes if note.get('due_date') is not None]
+    others = [note for note in notes if note.get('due_date') is None]
+    reverse = True if sorting_type == 'descending' else False
+    sorted_notes = sorted(for_sorting,
+                    key=lambda note: note['due_date'],
+                    reverse=reverse)
+    result = sorted_notes + others
     return result
 
 

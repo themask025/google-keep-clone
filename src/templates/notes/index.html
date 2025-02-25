@@ -43,9 +43,25 @@
         <section class="sort_notes">
             <p>Sort notes by due date:</p>
             <form method="post">
-                <input type="radio" name="radio_ascending" id="radio_ascending" value="ascending">
+                <input type="radio"
+                       name="sorting_type"
+                       id="radio_ascending"
+                       value="ascending"
+                       required
+                       {% if sorting_type == 'ascending' %}
+                       checked
+                       {% endif %}
+                       >
                 <label for="radio_ascending">Ascending</label>
-                <input type="radio" name="radio_descending" id="radio_descending" value="descending">
+                <input type="radio"
+                       name="sorting_type"
+                       id="radio_descending"
+                       value="descending"
+                       required
+                       {% if sorting_type == 'descending' %}
+                       checked
+                       {% endif %}
+                       >
                 <label for="radio_descending">Descending</label>
                 <input type="submit" name="submit_sorting" id="submit_sorting" value="Sort">
                 <input type="submit" name="clear_sorting" id="clear_sorting" value="Clear sorting">

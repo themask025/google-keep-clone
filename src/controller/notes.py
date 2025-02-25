@@ -1,5 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from datetime import datetime
+from werkzeug.wrappers import Response
 
 from src.model.note import (fetch_all_notes_by_user_id,
                             fetch_note_by_id,
@@ -21,7 +22,7 @@ bp = Blueprint('notes', __name__, url_prefix='/notes')
 
 
 @bp.route('/', methods=('GET', 'POST'))
-def index():
+def index() -> str:
     if session.get('user_id') is not None:
         user_id = session.get('user_id')
 
@@ -96,7 +97,7 @@ def index():
 
 
 @bp.route('/create', methods=('GET', 'POST'))
-def create():
+def create() -> str | Response:
     user_id = session.get('user_id')
     current_note = None
     all_tags = fetch_all_tags_by_creator_id(creator_id=user_id)
@@ -151,7 +152,7 @@ def create():
 
 
 @bp.route('/edit/<note_id>', methods=('GET', 'POST'))
-def edit(note_id):
+def edit(note_id: int) -> str | Response:
     user_id = session.get('user_id')
 
     if note_id is None:
@@ -250,7 +251,7 @@ def edit(note_id):
 
 
 @bp.route('/delete/<note_id>', methods=('POST',))
-def delete(note_id):
+def delete(note_id: int) -> Response:
     if note_id is not None:
         delete_note_by_id(note_id)
 
@@ -275,7 +276,7 @@ def sort_notes(notes: list[dict], sorting_type: str) -> list[dict]:
     return result
 
 
-def validate_note_title_content(title, content):
+def validate_note_title_content(title: str | None, content: str | None) -> str | None:
     if title is None:
         return 'A title is required.'
     elif content is None:

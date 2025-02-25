@@ -7,7 +7,7 @@ bp = Blueprint('tags', __name__, url_prefix='/tags')
 
 
 @bp.route('/edit', methods=('GET', 'POST'))
-def edit():
+def edit() -> str:
     user_id = session['user_id']
     tags = fetch_all_tags_by_creator_id(creator_id=user_id)
     

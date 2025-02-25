@@ -1,39 +1,40 @@
 from src.model.database import (read_single_result_from_database,
                                 read_all_results_from_database,
                                 write_to_database)
+from sqlite3 import Row
 
 
-def insert_tag_into_database(creator_id, tag_name):
+def insert_tag_into_database(creator_id: int, tag_name: str) -> None:
     stmt = 'INSERT INTO tags(creator_id, name) VALUES (?, ?)'
     params = (creator_id, tag_name)
     write_to_database(stmt, params)
 
 
-def fetch_all_tags_by_creator_id(creator_id):
+def fetch_all_tags_by_creator_id(creator_id: int) -> list[Row] | None:
     stmt = 'SELECT * FROM tags WHERE creator_id=?'
     params = (creator_id,)
     return read_all_results_from_database(stmt, params)
 
 
-def fetch_tag_by_name(tag_name):
+def fetch_tag_by_name(tag_name: int) -> Row | None:
     stmt = 'SELECT * FROM tags WHERE name=?'
     params = (tag_name,)
     return read_single_result_from_database(stmt, params)
 
 
-def update_tag_name_in_database_by_tag_id(new_tag_name, tag_id):
+def update_tag_name_in_database_by_tag_id(new_tag_name: str, tag_id: int) -> None:
     stmt = 'UPDATE tags SET name = ? WHERE id=?'
     params = (new_tag_name, tag_id)
     write_to_database(stmt, params)
 
 
-def delete_tag_by_id(tag_id):
+def delete_tag_by_id(tag_id: int) -> None:
     stmt = 'DELETE FROM tags WHERE id=?'
     params = (tag_id,)
     write_to_database(stmt, params)
 
 
-def validate_new_tag_name(creator_id, tag_name):
+def validate_new_tag_name(creator_id: int, tag_name: str) -> str | None:
     all_tags = fetch_all_tags_by_creator_id(creator_id)
     all_tags_names = [tag['name'] for tag in all_tags]
 

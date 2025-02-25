@@ -82,6 +82,7 @@ def index():
         notes = []
         selected_filter_tags = []
         search_expression = None
+        sorting_type = None
         tags = []
 
     return render_template("notes/index.html",

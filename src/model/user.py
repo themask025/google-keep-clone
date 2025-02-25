@@ -1,13 +1,15 @@
-from src.model.database import get_db
-
+from src.model.database import (read_single_result_from_database,
+                                write_to_database_and_get_id)
+from sqlite3 import Row
 
 def insert_user_into_database(username: str, password_hash: str) -> int:
-    db = get_db()
-    cursor = db.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, password_hash,))
-    db.commit()
-    return cursor.lastrowid
-    
-def fetch_user_by_username(username: str):
-    db = get_db()
-    user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-    return user
+    stmt = 'INSERT INTO users (username, password_hash) VALUES (?, ?)'
+    params = (username, password_hash,)
+    user_id = write_to_database_and_get_id(stmt, params)
+    return user_id
+
+
+def fetch_user_by_username(username: str) -> Row | None:
+    stmt = 'SELECT * FROM users WHERE username = ?'
+    params = (username,)
+    return read_single_result_from_database(stmt, params)
